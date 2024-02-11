@@ -1,0 +1,6 @@
+main.pyproject
+main.pyproject.user
+warframe_simulacrum_interface.egg-info/
+venv/
+__pycache__/
+open_venv.bat

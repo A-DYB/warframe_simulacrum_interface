@@ -1,0 +1,4 @@
+
+[submodule "warframe_simulacrum"]
+	path = warframe_simulacrum
+	url = https://github.com/A-DYB/warframe_simulacrum.git
