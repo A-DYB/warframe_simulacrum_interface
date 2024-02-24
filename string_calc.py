@@ -7,8 +7,9 @@ _OP_MAP = {
     ast.Mult: operator.mul,
     ast.Div: operator.truediv,
     ast.Invert: operator.neg,
+    ast.USub: operator.neg,
+    ast.Pow: operator.pow,
 }
-
 
 class Calc(ast.NodeVisitor):
 
@@ -22,6 +23,10 @@ class Calc(ast.NodeVisitor):
 
     def visit_Expr(self, node):
         return self.visit(node.value)
+    
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        return _OP_MAP[type(node.op)](operand)
 
     @classmethod
     def evaluate(cls, expression):
