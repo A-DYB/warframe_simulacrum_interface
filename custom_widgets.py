@@ -1,18 +1,20 @@
-from PySide6.QtWidgets import QStyledItemDelegate,QHeaderView, QCheckBox, QTableWidgetItem, QTableWidget, QFrame, QListWidgetItem, QHBoxLayout, QLabel, QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QApplication, QStyledItemDelegate, QLineEdit, QTableView, QAbstractItemView, QAbstractItemDelegate, QWidget, QStyle, QCompleter, QVBoxLayout
-from PySide6.QtCore import QEvent, Qt, QModelIndex, QSortFilterProxyModel,QItemSelectionModel, Signal, QTimer
-from PySide6.QtGui import QCursor, QStandardItemModel, QStandardItem, QDropEvent
+from PySide6.QtWidgets import QTableWidgetItem, QTreeView, QCheckBox, QDoubleSpinBox, QStyledItemDelegate,QHeaderView, QRadioButton, QPushButton, QTableWidget, QDialog, QMessageBox, QFrame, QSpinBox,  QListWidgetItem, QHBoxLayout, QLabel, QLineEdit, QComboBox, QApplication, QStyledItemDelegate, QLineEdit, QTableView, QAbstractItemView, QWidget, QCompleter, QVBoxLayout
+from PySide6.QtCore import Qt, QSortFilterProxyModel,QItemSelectionModel, Signal, QTimer, QAbstractItemModel, QModelIndex, QObject, Qt, QFileInfo
+from PySide6.QtGui import QCursor, QStandardItemModel, QStandardItem, QValidator
 import interface_constants as cst
 
 from matplotlib.backends.backend_qtagg import FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
-import pandas as pd
-import numpy as np
 
-from matplotlib.offsetbox import (AnchoredOffsetbox, DrawingArea, HPacker,
-                                  TextArea)
+from typing import List, Dict, Union, Any
+
 
 # Create a custom QTableView class that inherits from QTableView
 class ModTableView(QTableView):
+    def __init__(self, parent: QWidget | None = ...) -> None:
+        super().__init__(parent)
+        self.edit_mode=False
+
     def cellClicked(self, index):
         model = self.model()
         if model is None:
@@ -195,14 +197,12 @@ class SubstringFilterProxyModel(QSortFilterProxyModel):
         # compare the indexes
         return left_index < right_index
 
-
 class CustomQCompleter(QCompleter):
     def splitPath(self, path):
-        self.local_completion_prefix = path
-        # self.model().invalidateFilter()  # invalidate the current filtering - model should be set to a QSortFilterProxyModel. Need to call this otherwise it won't use the custom QSortFilterProxyModel
         self.model().invalidate() # Invalidates the current sorting and filtering.
         self.model().sort(0, Qt.AscendingOrder)
         return ""
+
     
 class SelectAllLineEdit(QLineEdit):
     def __init__(self, parent=None):
@@ -220,6 +220,7 @@ class SelectAllLineEdit(QLineEdit):
         self.deselect()
         self.readyToEdit = True
 
+
 class SearchableComboBox(QComboBox):
     def __init__(self, parent: QWidget | None = None ) -> None:
         super().__init__(parent)
@@ -228,27 +229,41 @@ class SearchableComboBox(QComboBox):
         self.setLineEdit(SelectAllLineEdit())
         self.lineEdit().setEchoMode(QLineEdit.EchoMode.Normal)
 
-        completer = CustomQCompleter()
         proxy_model = SubstringFilterProxyModel()
         proxy_model.setSourceModel(self.model())
-        completer.setModel(proxy_model)
 
         self.lineEdit().textChanged.connect(proxy_model.setFilterRegularExpression)
         self.lineEdit().editingFinished.connect(self.editing_finished)
 
-        # Set the completer to use popup completion mode and a custom delay
+        completer = CustomQCompleter()
+        completer.setModel(proxy_model)
         completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
+        completer.popup().setStyleSheet("QListView::item:hover {background-color: rgb(55,134,209);}")
 
         # Set the completer for the combo box
         self.setCompleter(completer)
+
         self.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        self.completer().popup().pressed.connect(self.popup_pressed)
     
+    def popup_pressed(self):
+        text = self.completer().currentCompletion()
+        index = self.findText(text)
+        # self.setCurrentIndex(index)
+        # self.activated.emit(index)
+        self.completer().popup().clicked.emit(index)
+        self.clearFocus()
+        self.lineEdit().clearFocus()
+        self.lineEdit().setText(text)
+
     def editing_finished(self):
         text = self.completer().currentCompletion()
         index = self.findText(text)
         self.setCurrentIndex(index)
         self.clearFocus()
         self.activated.emit(index)
+        self.completer().popup().clicked.emit(index)
+
 
 class PlotWindow(QWidget):
     """
@@ -343,7 +358,7 @@ class TableItemDescriptor(QWidget):
         self.layoutv.addWidget(self.label)
         # self.layoutv.addWidget(self.line_edit)
         self.layoutv.addWidget(self.label_val)
-        self.layoutv.setContentsMargins(0, 0, 0, 0)
+        self.layoutv.setContentsMargins(4, 0, 0, 0)
         self.setLayout(self.layoutv)
 
         self.list_widget_item = QListWidgetItem()
@@ -358,10 +373,426 @@ class TableItemCategoryLabel(QWidget):
 
         self.layoutv = QHBoxLayout()
         self.layoutv.addWidget(self.label)
-        self.layoutv.setContentsMargins(0, 0, 0, 0)
+        self.layoutv.setContentsMargins(4, 0, 0, 0)
         self.setLayout(self.layoutv)
 
         self.list_widget_item = QListWidgetItem()
         self.list_widget_item.setSizeHint(self.sizeHint())
         self.list_widget_item.setFlags(self.list_widget_item.flags() & ~Qt.ItemIsSelectable)
 
+class ClipSpinBox(QSpinBox):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+    def fixup(self, text):
+        # Convert the text to an integer
+        value = int(text)
+
+        # If the value is larger than the maximum, set it to the maximum
+        if value > self.maximum():
+            value = self.maximum()
+        # If the value is smaller than the minimum, set it to the minimum
+        elif value < self.minimum():
+            value = self.minimum()
+
+        # Set the corrected value to the spin box
+        self.setValue(value)
+    
+    def validate(self, input: str, pos: int) -> object:
+        try:
+            val = int(input, self.displayIntegerBase())
+        except:
+            return super().validate(input, pos)
+        
+        if val > self.minimum() and val < self.maximum():
+            return QValidator.State.Acceptable
+        if val < self.minimum():
+            self.setValue(self.minimum())
+        elif val > self.maximum():
+            self.setValue(self.maximum())
+        return QValidator.State.Acceptable
+        
+class SaveDialog(QDialog):
+    def __init__(self, accept_method):
+        super().__init__()
+        self.setModal(True) # user has to select option before continuing
+        self.setWindowTitle("Save as")
+        self.radio1 = QRadioButton("Save weapon config")
+        self.radio1.setChecked(True)
+        self.radio2 = QRadioButton("Save enemy config")
+        self.save_button = QPushButton("Save")
+        self.cancel_button = QPushButton("Cancel")
+        self.save_button.clicked.connect(self.ok_clicked)
+        self.cancel_button.clicked.connect(self.cancel_clicked)
+        self.radio_layout = QVBoxLayout()
+        self.radio_layout.addWidget(self.radio1)
+        self.radio_layout.addWidget(self.radio2)
+        self.button_layout = QHBoxLayout()
+        self.button_layout.addWidget(self.save_button)
+        self.button_layout.addWidget(self.cancel_button)
+        self.main_layout = QVBoxLayout()
+        self.main_layout.addLayout(self.radio_layout)
+        self.main_layout.addLayout(self.button_layout)
+        self.setLayout(self.main_layout)
+        self.accepted.connect(accept_method)
+
+    def ok_clicked(self):
+        # close the dialog
+        self.accept()
+
+    def cancel_clicked(self):
+        # close the dialog
+        self.reject()
+
+class PrimerTableWidget(QTableWidget):
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+
+        self.setRowCount(16)
+        self.setColumnCount(2)
+        self.setHorizontalHeaderLabels(['Status', 'Count'])
+
+        for row in range(self.rowCount()):
+            key = list(cst.PROCINDEX_INFO.keys())[row]
+            item = QTableWidgetItem()
+            self.setItem(row, 1, item )
+            cell_widget = CheckableSpinnerTableItem(cst.PROCINDEX_INFO[key])
+            self.setCellWidget(row, 1, cell_widget)
+            if key=='Heat':
+                cell_widget.spinner.valueChanged.connect(self.heat_spinner_changed)
+
+            item = QTableWidgetItem()
+            item.setText(key)
+            self.setItem(row, 0, item )
+    
+    def heat_spinner_changed(self, value):
+        child_widget = self.parent().findChild(QWidget, "heat_settings_widget")
+        if child_widget is None:
+            print(f'Could not find child widget heat_settings_widget')
+            return
+        if value == 0:
+            child_widget.hide()
+        else:
+            child_widget.show()
+
+
+class CheckableSpinnerTableItem(QWidget):
+    def __init__(self, proc_info):
+        super().__init__()
+        self.proc_info = proc_info
+        self.spinner = QSpinBox()
+        self.checkbox = QCheckBox()
+        self.checkbox.setText('↑')
+        self.spinner.setMaximum(proc_info["max_stacks"])
+
+        self.layoutv = QHBoxLayout()
+        self.layoutv.addWidget(self.spinner)
+        self.layoutv.addWidget(self.checkbox)
+        self.layoutv.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(self.layoutv)
+
+        # self.list_widget_item = QListWidgetItem()
+        # self.list_widget_item.setSizeHint(self.sizeHint())
+        # self.list_widget_item.setFlags(self.list_widget_item.flags() & ~Qt.ItemIsSelectable)
+
+        self.checkbox.stateChanged.connect(self.check_state_change)
+
+    def check_state_change(self, state):
+        if state == Qt.CheckState.Unchecked.value:
+            self.spinner.setValue(self.spinner.minimum())
+        elif state == Qt.CheckState.Checked.value:
+            self.spinner.setValue(self.spinner.maximum())
+
+
+class TreeItem:
+    """A Json item corresponding to a line in QTreeView"""
+
+    def __init__(self, parent: "TreeItem" = None):
+        self._parent = parent
+        self._key = ""
+        self._value = ""
+        self._value_type = None
+        self._children = []
+
+    def appendChild(self, item: "TreeItem"):
+        """Add item as a child"""
+        self._children.append(item)
+
+    def child(self, row: int) -> "TreeItem":
+        """Return the child of the current item from the given row"""
+        return self._children[row]
+
+    def parent(self) -> "TreeItem":
+        """Return the parent of the current item"""
+        return self._parent
+
+    def childCount(self) -> int:
+        """Return the number of children of the current item"""
+        return len(self._children)
+
+    def row(self) -> int:
+        """Return the row where the current item occupies in the parent"""
+        return self._parent._children.index(self) if self._parent else 0
+
+    @property
+    def key(self) -> str:
+        """Return the key name"""
+        return self._key
+
+    @key.setter
+    def key(self, key: str):
+        """Set key name of the current item"""
+        self._key = key
+
+    @property
+    def value(self) -> str:
+        """Return the value name of the current item"""
+        return self._value
+
+    @value.setter
+    def value(self, value: str):
+        """Set value name of the current item"""
+        self._value = value
+
+    @property
+    def value_type(self):
+        """Return the python type of the item's value."""
+        return self._value_type
+
+    @value_type.setter
+    def value_type(self, value):
+        """Set the python type of the item's value."""
+        self._value_type = value
+
+    @classmethod
+    def load(
+        cls, value: Union[List, Dict], parent: "TreeItem" = None, sort=True
+    ) -> "TreeItem":
+        """Create a 'root' TreeItem from a nested list or a nested dictonary
+
+        Examples:
+            with open("file.json") as file:
+                data = json.dump(file)
+                root = TreeItem.load(data)
+
+        This method is a recursive function that calls itself.
+
+        Returns:
+            TreeItem: TreeItem
+        """
+        rootItem = TreeItem(parent)
+        rootItem.key = "root"
+
+        if isinstance(value, dict):
+            items = sorted(value.items()) if sort else value.items()
+
+            for key, value in items:
+                child = cls.load(value, rootItem)
+                child.key = key
+                child.value_type = type(value)
+                rootItem.appendChild(child)
+
+        elif isinstance(value, list):
+            for index, value in enumerate(value):
+                child = cls.load(value, rootItem)
+                child.key = index
+                child.value_type = type(value)
+                rootItem.appendChild(child)
+
+        else:
+            rootItem.value = value
+            rootItem.value_type = type(value)
+
+        return rootItem
+
+
+class JsonModel(QAbstractItemModel):
+    """ An editable model of Json data """
+
+    def __init__(self, parent: QObject = None):
+        super().__init__(parent)
+
+        self._rootItem = TreeItem()
+        self._headers = ("key", "value")
+
+    def clear(self):
+        """ Clear data from the model """
+        self.load({})
+
+    def load(self, document: dict):
+        """Load model from a nested dictionary returned by json.loads()
+
+        Arguments:
+            document (dict): JSON-compatible dictionary
+        """
+
+        assert isinstance(
+            document, (dict, list, tuple)
+        ), "`document` must be of dict, list or tuple, " f"not {type(document)}"
+
+        self.beginResetModel()
+
+        self._rootItem = TreeItem.load(document)
+        self._rootItem.value_type = type(document)
+
+        self.endResetModel()
+
+        return True
+
+    def data(self, index: QModelIndex, role: Qt.ItemDataRole) -> Any:
+        """Override from QAbstractItemModel
+
+        Return data from a json item according index and role
+
+        """
+        if not index.isValid():
+            return None
+
+        item = index.internalPointer()
+
+        if role == Qt.DisplayRole:
+            if index.column() == 0:
+                return item.key
+
+            if index.column() == 1:
+                return item.value
+
+        elif role == Qt.EditRole:
+            if index.column() == 1:
+                return item.value
+    def setEditorData(self, editor, index):
+        print('here')
+    def setModelData(self, editor, model, index):
+        print('here')
+
+    def setData(self, index: QModelIndex, value: Any, role: Qt.ItemDataRole):
+        """Override from QAbstractItemModel
+
+        Set json item according index and role
+
+        Args:
+            index (QModelIndex)
+            value (Any)
+            role (Qt.ItemDataRole)
+
+        """
+        if role == Qt.EditRole:
+            if index.column() == 1:
+                item = index.internalPointer()
+                item.value = str(value)
+
+                self.dataChanged.emit(index, index, [Qt.EditRole])
+
+                return True
+
+        return False
+
+    def headerData(
+        self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole
+    ):
+        """Override from QAbstractItemModel
+
+        For the JsonModel, it returns only data for columns (orientation = Horizontal)
+
+        """
+        if role != Qt.DisplayRole:
+            return None
+
+        if orientation == Qt.Horizontal:
+            return self._headers[section]
+
+    def index(self, row: int, column: int, parent=QModelIndex()) -> QModelIndex:
+        """Override from QAbstractItemModel
+
+        Return index according row, column and parent
+
+        """
+        if not self.hasIndex(row, column, parent):
+            return QModelIndex()
+
+        if not parent.isValid():
+            parentItem = self._rootItem
+        else:
+            parentItem = parent.internalPointer()
+
+        childItem = parentItem.child(row)
+        if childItem:
+            return self.createIndex(row, column, childItem)
+        else:
+            return QModelIndex()
+
+    def parent(self, index: QModelIndex) -> QModelIndex:
+        """Override from QAbstractItemModel
+
+        Return parent index of index
+
+        """
+
+        if not index.isValid():
+            return QModelIndex()
+
+        childItem = index.internalPointer()
+        parentItem = childItem.parent()
+
+        if parentItem == self._rootItem:
+            return QModelIndex()
+
+        return self.createIndex(parentItem.row(), 0, parentItem)
+
+    def rowCount(self, parent=QModelIndex()):
+        """Override from QAbstractItemModel
+
+        Return row count from parent index
+        """
+        if parent.column() > 0:
+            return 0
+
+        if not parent.isValid():
+            parentItem = self._rootItem
+        else:
+            parentItem = parent.internalPointer()
+
+        return parentItem.childCount()
+
+    def columnCount(self, parent=QModelIndex()):
+        """Override from QAbstractItemModel
+
+        Return column number. For the model, it always return 2 columns
+        """
+        return 2
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        """Override from QAbstractItemModel
+
+        Return flags of index
+        """
+        flags = super(JsonModel, self).flags(index)
+
+        if index.column() == 1:
+            return Qt.ItemIsEditable | flags
+        else:
+            return flags
+
+    def to_json(self, item=None):
+
+        if item is None:
+            item = self._rootItem
+
+        nchild = item.childCount()
+
+        if item.value_type is dict:
+            document = {}
+            for i in range(nchild):
+                ch = item.child(i)
+                document[ch.key] = self.to_json(ch)
+            return document
+
+        elif item.value_type == list:
+            document = []
+            for i in range(nchild):
+                ch = item.child(i)
+                document.append(self.to_json(ch))
+            return document
+
+        else:
+            return item.value

@@ -42,3 +42,121 @@ D_INDEX = {'Impact': 0, 'Puncture': 1, 'Slash': 2, 'Heat': 3, 'Cold': 4, 'Electr
            'Shield_drain': 17, 'Health_drain': 18, 'Energy_drain': 19, 'Suicide': 20, 'Physical': 21, 
            'Base_elemental': 22, 'Compound_elemental': 23, 'Any': 0, 'Invalid': 24}
 INDEX_D = {v:k for k,v in D_INDEX.items()}
+
+COMBINABLEDAMAGE_INDEX = {'Blast': 7, 'Radiation': 8, 'Gas': 9, 'Magnetic': 10, 'Viral': 11, 
+           'Corrosive': 12}
+INDEX_COMBINABLEDAMAGE = {v:k for k,v in COMBINABLEDAMAGE_INDEX.items()}
+
+PROCINDEX_INFO = {"Impact": {"name": "Impact", "duration": 6, "max_stacks": 5, "proc_index":0}, 
+                  "Puncture": {"name": "Puncture","duration": 6,"max_stacks": 5, "proc_index":1},
+                "Slash": {"name": "Slash","duration": 6,"max_stacks": 1, "damage_scaling":0.35, "proc_index":2}, 
+                "Heat": {"name": "Heat","duration": 6,"max_stacks": 1,"refresh": True, "damage_scaling":0.5, "proc_index":3},
+                "Cold": {"name": "Cold","duration": 6,"max_stacks": 9, "proc_index":4},
+                "Electric": {"name": "Electric","duration": 6,"max_stacks": 1, "damage_scaling":0.5, "proc_index":5},
+                "Toxin": {"name": "Toxin","duration": 6,"max_stacks": 1, "damage_scaling":0.5, "proc_index":6},
+                "Blast": {"name": "Blast","duration": 10,"max_stacks": 4, "proc_index":7},
+                "Radiation": {"name": "Radiation","duration": 12,"max_stacks": 10, "proc_index":8},
+                "Gas": {"name": "Gas","duration": 6,"max_stacks": 10, "damage_scaling":0.5, "proc_index":9},
+                "Magnetic": {"name": "Magnetic","duration": 6,"max_stacks": 10, "proc_index":10},
+                "Viral": {"name": "Viral","duration": 6,"max_stacks": 10, "proc_index":11},
+                "Corrosive": {"name": "Corrosive","duration": 8,"max_stacks": 10, "proc_index":12},
+                "Void": {"name": "Void","duration": 3,"max_stacks": 1, "proc_index":13},
+                "Knockdown": {"name": "Knockdown","duration": 3,"max_stacks": 1, "proc_index":14},
+                "Microwave": {"name": "Microwave","duration": 3,"max_stacks": 1, "proc_index":15}}
+
+
+DEFAULT_ENEMY_CONFIG = {
+        "base_health": 100.0,
+        "base_armor": 0.0,
+        "base_shield": 0.0,
+        "base_level": 1.0,
+        "base_dr": 1.0,
+        "health_vulnerability": 1,
+        "shield_vulnerability": 1,
+        "health_type": "Flesh",
+        "armor_type": "None",
+        "shield_type": ["None", 'test'],
+        "damage_controller_type": "DC_NORMAL",
+        "critical_controller_type": "CC_NORMAL",
+        "faction": "Tenno",
+        "base_overguard": 0,
+        "is_eximus": False,
+        "proc_info": {
+            "PT_IMPACT": {
+                "name": "Impact",
+                "duration": 6,
+                "max_stacks": 3
+            },
+            "PT_PUNCTURE": {
+                "name": "Puncture",
+                "duration": 6,
+                "max_stacks": 3
+            },
+            "PT_SLASH": {
+                "name": "Slash",
+                "duration": 6,
+                "max_stacks": 4,
+                "damage_scaling":1
+            },
+            "PT_HEAT": {
+                "name": "Heat",
+                "duration": 6,
+                "max_stacks": 4,
+                "refresh": False,
+                "damage_scaling":1
+            },
+            "PT_COLD": {
+                "name": "Cold",
+                "duration": 6,
+                "max_stacks": 4
+            },
+            "PT_ELECTRIC": {
+                "name": "Electric",
+                "duration": 6,
+                "max_stacks": 4,
+                "damage_scaling":1
+            },
+            "PT_TOXIN": {
+                "name": "Toxin",
+                "duration": 6,
+                "max_stacks": 4,
+                "damage_scaling":1
+            },
+            "PT_BLAST": {
+                "name": "Blast",
+                "duration": 6,
+                "max_stacks": 4
+            },
+            "PT_RADIATION": {
+                "name": "Radiation",
+                "duration": 12,
+                "max_stacks": 4
+            },
+            "PT_GAS": {
+                "name": "Gas",
+                "duration": 6,
+                "max_stacks": 4,
+                "damage_scaling":1
+            },
+            "PT_MAGNETIC": {
+                "name": "Magnetic",
+                "duration": 6,
+                "max_stacks": 4
+            },
+            "PT_VIRAL": {
+                "name": "Viral",
+                "duration": 6,
+                "max_stacks": 0
+            },
+            "PT_CORROSIVE": {
+                "name": "Corrosive",
+                "duration": 8,
+                "max_stacks": 4
+            },
+            "PT_RADIANT": {
+                "name": "Void",
+                "duration": 3,
+                "max_stacks": 1
+            }
+        }
+}

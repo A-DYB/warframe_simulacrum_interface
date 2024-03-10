@@ -29,101 +29,405 @@
       <enum>QFrame::Raised</enum>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_4">
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
       <item>
-       <widget class="QGroupBox" name="groupBox">
-        <property name="title">
-         <string>Weapon Configuration</string>
+       <widget class="QTabWidget" name="tabWidget">
+        <property name="currentIndex">
+         <number>0</number>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout_6">
-         <item>
-          <widget class="SearchableComboBox" name="sim_weapon_combo"/>
-         </item>
-         <item>
-          <widget class="SearchableComboBox" name="sim_firemode_combo">
-           <property name="placeholderText">
-            <string/>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="Line" name="line">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="mod_filter_line_edit">
-           <property name="placeholderText">
-            <string>Filter mod type</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QFrame" name="frame_2">
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>100</height>
-            </size>
-           </property>
-           <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
-           </property>
-           <property name="frameShadow">
-            <enum>QFrame::Raised</enum>
-           </property>
-           <layout class="QHBoxLayout" name="horizontalLayout">
-            <item>
-             <widget class="ModTableView" name="mod_table_view"/>
-            </item>
-            <item>
-             <widget class="DragDropTableWidget" name="elemental_mod_order_table">
-              <property name="maximumSize">
-               <size>
-                <width>125</width>
-                <height>16777215</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </item>
-        </layout>
+        <widget class="QWidget" name="tab">
+         <attribute name="title">
+          <string>Weapon Configuration</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_12">
+          <property name="leftMargin">
+           <number>4</number>
+          </property>
+          <property name="topMargin">
+           <number>9</number>
+          </property>
+          <property name="rightMargin">
+           <number>4</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="QWidget" name="widget_7" native="true">
+            <layout class="QFormLayout" name="formLayout_4">
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_8">
+               <property name="text">
+                <string>Fire Mode</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="SearchableComboBox" name="sim_firemode_combo">
+               <property name="placeholderText">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="SearchableComboBox" name="sim_weapon_combo"/>
+             </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_9">
+               <property name="text">
+                <string>Weapon</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="Line" name="line">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QWidget" name="widget_3" native="true">
+            <layout class="QHBoxLayout" name="horizontalLayout_5">
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QLineEdit" name="mod_filter_line_edit">
+               <property name="placeholderText">
+                <string>Filter mod type</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="clear_mod_tables_button">
+               <property name="text">
+                <string>Clear Table</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QFrame" name="frame_2">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>100</height>
+             </size>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout">
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="ModTableView" name="mod_table_view"/>
+             </item>
+             <item>
+              <widget class="DragDropTableWidget" name="elemental_mod_order_table">
+               <property name="maximumSize">
+                <size>
+                 <width>125</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="tab_2">
+         <attribute name="title">
+          <string>Primer</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_11">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item alignment="Qt::AlignLeft">
+           <widget class="QWidget" name="widget_5" native="true">
+            <layout class="QVBoxLayout" name="verticalLayout_3">
+             <property name="leftMargin">
+              <number>9</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QPushButton" name="primer_clear_settings_button">
+               <property name="text">
+                <string>Clear Settings</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QWidget" name="widget_6" native="true">
+               <layout class="QFormLayout" name="formLayout_2">
+                <property name="formAlignment">
+                 <set>Qt::AlignHCenter|Qt::AlignTop</set>
+                </property>
+                <property name="leftMargin">
+                 <number>0</number>
+                </property>
+                <property name="topMargin">
+                 <number>1</number>
+                </property>
+                <property name="rightMargin">
+                 <number>0</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>1</number>
+                </property>
+                <item row="1" column="0">
+                 <widget class="QLabel" name="label_5">
+                  <property name="text">
+                   <string>Status Duration</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="QDoubleSpinBox" name="primer_status_duration_spinner">
+                  <property name="maximumSize">
+                   <size>
+                    <width>75</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <widget class="QWidget" name="heat_settings_widget" native="true">
+               <layout class="QFormLayout" name="formLayout_3">
+                <property name="formAlignment">
+                 <set>Qt::AlignHCenter|Qt::AlignTop</set>
+                </property>
+                <property name="leftMargin">
+                 <number>0</number>
+                </property>
+                <property name="topMargin">
+                 <number>1</number>
+                </property>
+                <property name="rightMargin">
+                 <number>0</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>1</number>
+                </property>
+                <item row="0" column="0">
+                 <widget class="QLabel" name="label_6">
+                  <property name="text">
+                   <string>Faction Bonus</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="1">
+                 <widget class="QDoubleSpinBox" name="primer_faction_spinner">
+                  <property name="maximumSize">
+                   <size>
+                    <width>75</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QLabel" name="label_7">
+                  <property name="text">
+                   <string>Heat Mod Bonus</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="QDoubleSpinBox" name="primer_heat_spinner">
+                  <property name="maximumSize">
+                   <size>
+                    <width>75</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="primer_activate_all_checkbox">
+               <property name="text">
+                <string>Activate all procs</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="PrimerTableWidget" name="primer_mod_table">
+               <property name="maximumSize">
+                <size>
+                 <width>250</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </widget>
        </widget>
       </item>
       <item>
        <widget class="QGroupBox" name="groupBox_2">
+        <property name="font">
+         <font>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
         <property name="title">
          <string>Enemy Configuration</string>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_5">
+         <property name="leftMargin">
+          <number>9</number>
+         </property>
+         <property name="topMargin">
+          <number>9</number>
+         </property>
+         <property name="bottomMargin">
+          <number>4</number>
+         </property>
          <item>
           <widget class="QWidget" name="widget" native="true">
-           <layout class="QHBoxLayout" name="horizontalLayout_3">
-            <item>
-             <widget class="SearchableComboBox" name="sim_enemy_combo"/>
-            </item>
-            <item>
-             <widget class="QComboBox" name="sim_bodypart_combo"/>
-            </item>
-            <item>
+           <layout class="QGridLayout" name="gridLayout_2">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <property name="verticalSpacing">
+             <number>0</number>
+            </property>
+            <item row="1" column="2">
              <widget class="QComboBox" name="sim_animation_combo"/>
             </item>
-            <item>
-             <widget class="QSpinBox" name="sim_level_spinner">
+            <item row="1" column="0">
+             <widget class="SearchableComboBox" name="sim_enemy_combo"/>
+            </item>
+            <item row="1" column="1">
+             <widget class="QComboBox" name="sim_bodypart_combo"/>
+            </item>
+            <item row="1" column="3">
+             <widget class="ClipSpinBox" name="sim_level_spinner">
               <property name="maximumSize">
                <size>
                 <width>75</width>
                 <height>16777215</height>
                </size>
               </property>
+              <property name="correctionMode">
+               <enum>QAbstractSpinBox::CorrectToPreviousValue</enum>
+              </property>
               <property name="minimum">
                <number>1</number>
               </property>
               <property name="maximum">
                <number>9999</number>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_10">
+              <property name="text">
+               <string>Enemy</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLabel" name="label_11">
+              <property name="text">
+               <string>Bodypart</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="2">
+             <widget class="QLabel" name="label_12">
+              <property name="text">
+               <string>Animation</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="3">
+             <widget class="QLabel" name="label_13">
+              <property name="text">
+               <string>Level</string>
               </property>
              </widget>
             </item>
@@ -136,9 +440,21 @@
             <string>Scaling</string>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_7">
+            <property name="topMargin">
+             <number>1</number>
+            </property>
+            <property name="bottomMargin">
+             <number>1</number>
+            </property>
             <item>
              <widget class="QWidget" name="widget_4" native="true">
               <layout class="QFormLayout" name="formLayout">
+               <property name="topMargin">
+                <number>1</number>
+               </property>
+               <property name="bottomMargin">
+                <number>1</number>
+               </property>
                <item row="1" column="0">
                 <widget class="QLabel" name="label_3">
                  <property name="text">
@@ -149,7 +465,7 @@
                <item row="1" column="1">
                 <widget class="QDoubleSpinBox" name="armor_multiplier_spinner">
                  <property name="minimum">
-                  <double>1.000000000000000</double>
+                  <double>0.000000000000000</double>
                  </property>
                  <property name="maximum">
                   <double>100.000000000000000</double>
@@ -169,7 +485,7 @@
                <item row="0" column="1">
                 <widget class="QDoubleSpinBox" name="health_multiplier_spinner">
                  <property name="minimum">
-                  <double>1.000000000000000</double>
+                  <double>0.010000000000000</double>
                  </property>
                  <property name="maximum">
                   <double>100.000000000000000</double>
@@ -192,7 +508,7 @@
                   <number>3</number>
                  </property>
                  <property name="minimum">
-                  <double>1.000000000000000</double>
+                  <double>0.000000000000000</double>
                  </property>
                  <property name="maximum">
                   <double>100.000000000000000</double>
@@ -207,18 +523,34 @@
             </item>
             <item>
              <widget class="QWidget" name="widget_2" native="true">
-              <layout class="QVBoxLayout" name="verticalLayout_8">
-               <item>
-                <widget class="QPushButton" name="pushButton">
+              <layout class="QGridLayout" name="gridLayout">
+               <property name="leftMargin">
+                <number>9</number>
+               </property>
+               <property name="topMargin">
+                <number>1</number>
+               </property>
+               <property name="bottomMargin">
+                <number>1</number>
+               </property>
+               <item row="1" column="0">
+                <widget class="QCheckBox" name="old_level_scale_checkbox">
+                 <property name="text">
+                  <string>Old Level Scaling</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="0">
+                <widget class="QPushButton" name="apply_steel_path_conditions_button">
                  <property name="text">
                   <string>Apply Steel Path Conditions</string>
                  </property>
                 </widget>
                </item>
-               <item>
-                <widget class="QCheckBox" name="old_level_scale_checkbox">
+               <item row="0" column="1">
+                <widget class="QPushButton" name="clear_enemy_scaling_button">
                  <property name="text">
-                  <string>Old Level Scaling</string>
+                  <string>Clear</string>
                  </property>
                 </widget>
                </item>
@@ -235,13 +567,6 @@
        <widget class="QPushButton" name="load_mods_button">
         <property name="text">
          <string>Run</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="lineEdit">
-        <property name="clearButtonEnabled">
-         <bool>false</bool>
         </property>
        </widget>
       </item>
@@ -263,6 +588,18 @@
       <enum>QFrame::Raised</enum>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_9">
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
       <item>
        <widget class="QFrame" name="frame_6">
         <property name="frameShape">
@@ -272,6 +609,18 @@
          <enum>QFrame::Raised</enum>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
          <item>
           <widget class="QFrame" name="frame_7">
            <property name="frameShape">
@@ -281,8 +630,45 @@
             <enum>QFrame::Raised</enum>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_10">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
             <item>
-             <widget class="QComboBox" name="preview_effect_select_combo"/>
+             <widget class="QWidget" name="widget_8" native="true">
+              <layout class="QFormLayout" name="formLayout_5">
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item row="1" column="0">
+                <widget class="QLabel" name="label_14">
+                 <property name="text">
+                  <string>Fire mode effect</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QComboBox" name="preview_effect_select_combo"/>
+               </item>
+              </layout>
+             </widget>
             </item>
             <item>
              <widget class="QListWidget" name="preview_weapon_list"/>
@@ -318,6 +704,18 @@
          <enum>QFrame::Raised</enum>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_2">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
          <item>
           <widget class="QLabel" name="label">
            <property name="font">
@@ -357,6 +755,16 @@
    <class>DragDropTableWidget</class>
    <extends>QTableView</extends>
    <header>custom_widgets.py</header>
+  </customwidget>
+  <customwidget>
+   <class>ClipSpinBox</class>
+   <extends>QSpinBox</extends>
+   <header>custom_widgets.py</header>
+  </customwidget>
+  <customwidget>
+   <class>PrimerTableWidget</class>
+   <extends>QTableWidget</extends>
+   <header>custom_widgets.py.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
