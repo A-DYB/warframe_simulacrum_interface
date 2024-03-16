@@ -127,7 +127,7 @@ class MainWindow(QMainWindow):
         with open("./warframe_simulacrum/data/unit_data.json", 'w') as f:
             json.dump(self.enemy_data, f, indent=4)
         
-        self.weapon_ui.edit_enemy_create_new_checkbox.setChecked(False)
+        self.enemy_ui.edit_enemy_create_new_checkbox.setChecked(False)
         self.enemy_ui.close()
         self.refresh_sim_enemy_combo()
         self.enemy_config_changed()
