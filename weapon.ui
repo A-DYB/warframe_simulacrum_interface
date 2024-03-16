@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>650</width>
-    <height>628</height>
+    <width>656</width>
+    <height>681</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,22 +15,19 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QWidget" name="widget" native="true">
-     <layout class="QGridLayout" name="gridLayout">
-      <item row="0" column="1">
-       <widget class="QCheckBox" name="edit_enemy_create_new_checkbox">
-        <property name="text">
-         <string>Create new</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLineEdit" name="edit_enemy_enemyname_lineedit">
+    <widget class="QWidget" name="widget_2" native="true">
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QLineEdit" name="weapon_lineedit">
         <property name="enabled">
          <bool>false</bool>
         </property>
-        <property name="placeholderText">
-         <string>Enemy name</string>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="add_new_weapon_checkbox">
+        <property name="text">
+         <string>Add New</string>
         </property>
        </widget>
       </item>
@@ -38,19 +35,19 @@
     </widget>
    </item>
    <item>
-    <widget class="QWidget" name="widget_2" native="true">
+    <widget class="QWidget" name="widget" native="true">
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
-       <widget class="QPushButton" name="add_bodypart_button">
+       <widget class="QPushButton" name="add_fire_mode_button">
         <property name="text">
-         <string>Add Bodypart</string>
+         <string>Add Fire Mode</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="add_animation_button">
+       <widget class="QPushButton" name="add_fire_mode_effect_button">
         <property name="text">
-         <string>Add Animation</string>
+         <string>Add Fire Mode Secondary Effect</string>
         </property>
        </widget>
       </item>
@@ -59,16 +56,16 @@
    </item>
    <item>
     <widget class="QWidget" name="widget_3" native="true">
-     <layout class="QGridLayout" name="gridLayout_2">
-      <item row="0" column="0">
-       <widget class="QPushButton" name="edit_enemy_save_button">
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <item>
+       <widget class="QPushButton" name="save_weapon_button">
         <property name="text">
          <string>Save</string>
         </property>
        </widget>
       </item>
-      <item row="0" column="1">
-       <widget class="QPushButton" name="edit_enemy_cancel_button">
+      <item>
+       <widget class="QPushButton" name="cancel_weapon_button">
         <property name="text">
          <string>Cancel</string>
         </property>
@@ -91,9 +88,9 @@
     </spacer>
    </item>
    <item>
-    <widget class="QPushButton" name="delete_enemy_button">
+    <widget class="QPushButton" name="delete_weapon_button">
      <property name="text">
-      <string>Delete Enemy</string>
+      <string>Delete Weapon</string>
      </property>
     </widget>
    </item>

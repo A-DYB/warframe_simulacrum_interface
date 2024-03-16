@@ -13,20 +13,26 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QFile
 from PySide6.QtCore import QFile, QSize, Qt
 from PySide6.QtUiTools import QUiLoader
 
-from custom_widgets import PrimerTableWidget, JsonModel, PositionCursorSelectDelegate, SaveDialog, ModTableView, ModTableItem, CustomFilterProxyModel, SearchableComboBox, PlotWindow, DragDropTableWidget, TableItemDescriptor, TableItemCategoryLabel, ClipSpinBox
+from custom_widgets import ComboBoxDialog, PrimerTableWidget, PositionCursorSelectDelegate, SaveDialog, ModTableView, ModTableItem, CustomFilterProxyModel, SearchableComboBox, PlotWindow, DragDropTableWidget, TableItemDescriptor, TableItemCategoryLabel, ClipSpinBox
 from warframe_simulacrum.weapon import Weapon, FireMode, EventTrigger, DamageParameter, Parameter
-from warframe_simulacrum.unit import Unit
+from warframe_simulacrum.unit import Unit, update
 import warframe_simulacrum.constants as sim_cst
 from warframe_simulacrum.simulation import Simulacrum, get_first_damage, get_first_status_damage
 from string_calc import Calc
 import interface_constants as cst
 import qrc_resources
+import copy
+
+from qt_json_view import model as view_model
+from qt_json_view.model import JsonModel
+from qt_json_view.view import JsonView
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         self.ui = None
         self.enemy_ui = None
+        self.weapon_ui = None
         self.load_ui()
         self.setAcceptDrops(True)
         self._create_actions()
@@ -47,10 +53,12 @@ class MainWindow(QMainWindow):
         self.weapon_data = self.get_weapon_data()
         self.enemy_data = self.get_enemy_data()
         self.save_dialog = SaveDialog(self.save_config_to_file)
+        self.select_fire_mode_dialog = ComboBoxDialog()
 
         self.setup_mod_table()
         self.setup_primer_weapon()
         self.setup_edit_enemy_table()
+        self.setup_edit_weapon_table()
         self.init_sim_weapon_combo()
         self.refresh_fire_mode_combo()
         # init effect combo
@@ -63,6 +71,9 @@ class MainWindow(QMainWindow):
         self.setup_weapon_preview_list()
         self.setup_elem_combo_table()
 
+        self.setup_enmey_ui()
+        self.setup_weapon_ui()
+
         self.setup_signals()
 
         self.swap_selected_weapon()
@@ -72,6 +83,102 @@ class MainWindow(QMainWindow):
         self.ui.health_multiplier_spinner.setValue(1)
         self.ui.shield_multiplier_spinner.setValue(1)
         self.ui.armor_multiplier_spinner.setValue(1)
+
+    def setup_enmey_ui(self):
+        self.enemy_ui.setModal(True)
+        self.enemy_ui.setWindowTitle("Add/Edit Enemy")
+        self.enemy_ui.edit_enemy_enemyname_lineedit.setText(self.ui.sim_enemy_combo.currentText())
+
+    def setup_edit_enemy_table(self, config=sim_cst.DEFAULT_ENEMY_CONFIG):
+        self.edit_enemy_view = JsonView()
+        self.update_edit_enemy_jsonview(config)
+        # self.enemy_ui.layout().addWidget(self.edit_enemy_view)
+        self.enemy_ui.layout().insertWidget(2, self.edit_enemy_view)
+    
+    def update_edit_enemy_jsonview(self, config=sim_cst.DEFAULT_ENEMY_CONFIG):
+        proxy = view_model.JsonSortFilterProxyModel()
+        self.jmodel = JsonModel(data=config, editable_keys=True, editable_values=True)
+        proxy.setSourceModel(self.jmodel)
+        self.edit_enemy_view.setModel(proxy)
+
+    def enemy_edit_mode(self, state):
+        if state == Qt.CheckState.Unchecked.value:
+            self.enemy_ui.edit_enemy_enemyname_lineedit.setEnabled(False)
+            self.enemy_ui.edit_enemy_enemyname_lineedit.setText(self.ui.sim_enemy_combo.currentText())
+            self.enemy_ui.delete_enemy_button.setEnabled(True)
+
+        elif state == Qt.CheckState.Checked.value:
+            self.enemy_ui.edit_enemy_enemyname_lineedit.setEnabled(True)
+            self.enemy_ui.edit_enemy_enemyname_lineedit.setText('')
+            self.enemy_ui.delete_enemy_button.setEnabled(False)
+
+    def close_enemy_editor(self):
+        self.enemy_ui.close()
+    
+    def save_enemy_editor(self):
+        enemy_name = self.enemy_ui.edit_enemy_enemyname_lineedit.text()
+        if self.enemy_ui.edit_enemy_create_new_checkbox.isChecked():
+            if (enemy_name == '' or enemy_name in self.enemy_data):
+                return
+        data = self.jmodel.serialize()
+        json_data = self.convert_enemy_jsonview_json(data)
+        self.enemy_data[enemy_name] = json_data
+
+        with open("./warframe_simulacrum/data/unit_data.json", 'w') as f:
+            json.dump(self.enemy_data, f, indent=4)
+        
+        self.weapon_ui.edit_enemy_create_new_checkbox.setChecked(False)
+        self.enemy_ui.close()
+        self.refresh_sim_enemy_combo()
+        self.enemy_config_changed()
+
+    def setup_weapon_ui(self):
+        self.weapon_ui.setModal(True)
+        self.weapon_ui.setWindowTitle("Add/Edit Weapon")
+        self.weapon_ui.weapon_lineedit.setText(self.ui.sim_weapon_combo.currentText())
+
+    def setup_edit_weapon_table(self, config=sim_cst.DEFAULT_WEAPON_CONFIG):
+        self.edit_weapon_view = JsonView()
+        self.update_edit_weapon_jsonview(config)
+        self.weapon_ui.layout().insertWidget(2, self.edit_weapon_view)
+    
+    def update_edit_weapon_jsonview(self, config=sim_cst.DEFAULT_WEAPON_CONFIG):
+        proxy = view_model.JsonSortFilterProxyModel()
+        self.jmodel = JsonModel(data=config, editable_keys=True, editable_values=True)
+        proxy.setSourceModel(self.jmodel)
+        self.edit_weapon_view.setModel(proxy)
+
+    def weapon_edit_mode(self, state):
+        if state == Qt.CheckState.Unchecked.value:
+            self.weapon_ui.weapon_lineedit.setEnabled(False)
+            self.weapon_ui.weapon_lineedit.setText(self.ui.sim_weapon_combo.currentText())
+            self.weapon_ui.delete_weapon_button.setEnabled(True)
+
+        elif state == Qt.CheckState.Checked.value:
+            self.weapon_ui.weapon_lineedit.setEnabled(True)
+            self.weapon_ui.weapon_lineedit.setText('')
+            self.weapon_ui.delete_weapon_button.setEnabled(False)
+
+    def close_weapon_editor(self):
+        self.weapon_ui.close()
+    
+    def save_weapon_editor(self):
+        weapon_name = self.weapon_ui.weapon_lineedit.text()
+        if self.weapon_ui.add_new_weapon_checkbox.isChecked():
+            if (weapon_name == '' or weapon_name in self.weapon_data):
+                return
+        data = self.jmodel.serialize()
+        json_data = self.convert_weapon_jsonview_json(data)
+        self.weapon_data[weapon_name] = json_data
+
+        with open("./warframe_simulacrum/data/ExportWeapons.json", 'w') as f:
+            json.dump(self.weapon_data, f, indent=4)
+            
+        self.weapon_ui.add_new_weapon_checkbox.setChecked(False)
+        self.weapon_ui.close()
+        self.refresh_sim_weapon_combo()
+        self.swap_selected_weapon()
+        
 
     def primer_activate_all(self, state):
 
@@ -85,17 +192,6 @@ class MainWindow(QMainWindow):
             item = self.ui.primer_mod_table.cellWidget(row, 1)
             item.checkbox.setChecked(check_state)
 
-    def setup_edit_enemy_table(self):
-        # create the model and load the data
-        model = JsonModel()
-        model.load(cst.DEFAULT_ENEMY_CONFIG)
-
-        # create the view and set the model
-        # view = QTreeView()
-        view = self.enemy_ui.treeView
-        view.setModel(model)
-        view.setWindowTitle("JSON Model Example")
-        view.show()
         
     def setup_primer_weapon(self):
         primer_fire_mode = next(iter(self.primer_weapon.fire_modes.values()))
@@ -109,7 +205,6 @@ class MainWindow(QMainWindow):
         for row in range(self.ui.primer_mod_table.rowCount()):
             item = self.ui.primer_mod_table.cellWidget(row, 1)
             forced_procs += [item.proc_info["proc_index"]]*item.spinner.value()
-            # print(item)
         for elem in self.primer_weapon.fire_modes:
             self.primer_weapon.fire_modes[elem].forcedProc = forced_procs
             break
@@ -134,7 +229,12 @@ class MainWindow(QMainWindow):
         ui_file = QFile(path)
         ui_file.open(QFile.ReadOnly)
         self.enemy_ui = loader.load(ui_file, self)
-        self.enemy_ui.show()
+        ui_file.close()
+
+        path = os.fspath(Path(__file__).resolve().parent / "weapon.ui")
+        ui_file = QFile(path)
+        ui_file.open(QFile.ReadOnly)
+        self.weapon_ui = loader.load(ui_file, self)
         ui_file.close()
     
     def closeEvent(self, event):
@@ -164,61 +264,7 @@ class MainWindow(QMainWindow):
 
         header = self.ui.primer_mod_table.horizontalHeader()
         header.setSectionResizeMode(1, QHeaderView.Stretch)
-
-    def _create_menu_bar(self):
-        menuBar = self.menuBar()
-        # file menu
-        file_menu = menuBar.addMenu("&File")
-        # save menu
-        save_menu = file_menu.addMenu("&Save")
-        save_menu.addAction(self.save_weapon_config_action)
-        save_menu.addAction(self.save_enemy_config_action)
-        # open menu
-        open_menu = file_menu.addMenu("&Open")
-        open_menu.addAction(self.open_enemy_config_action)
-        open_menu.addAction(self.open_weapon_config_action)
-
-        edit_menu = menuBar.addMenu("&Edit")
-
-    def _create_toolbar(self):
-        file_toolbar = QToolBar("File")
-        file_toolbar.setIconSize(QSize(16, 16))
-        self.addToolBar(file_toolbar)
-        file_toolbar.addAction(self.save_weapon_config_action)
-        file_toolbar.addAction(self.save_enemy_config_action)
-        file_toolbar.addAction(self.open_weapon_config_action)
-        file_toolbar.addAction(self.open_enemy_config_action)
-
-        edit_toolbar = QToolBar("Edit")
-        edit_toolbar.setIconSize(QSize(16, 16))
-        self.addToolBar(edit_toolbar)
     
-    def _create_actions(self):
-        self.save_weapon_config_action = QAction(QIcon(":save_weapon.png"), "Save &Build", self)
-        self.save_enemy_config_action= QAction(QIcon(":save_enemy.png"),"Save E&nemy Config", self)
-        self.open_enemy_config_action= QAction(QIcon(":load_enemy.png"),"Open E&nemy Config", self)
-        self.open_weapon_config_action= QAction(QIcon(":load_weapon.png"),"Open &Build", self)
-
-    def _connect_actions(self):
-        self.save_weapon_config_action.triggered.connect(self.save_weapon_config)
-        self.save_enemy_config_action.triggered.connect(self.save_enemy_config)
-        self.open_weapon_config_action.triggered.connect(self.open_weapon_config)
-        self.open_enemy_config_action.triggered.connect(self.open_enemy_config)
-
-    def open_weapon_config(self):
-        file_name = QFileDialog.getOpenFileName(self, 'Open weapon configuration', f'./configs/weapon', "JSON (*.json)", selectedFilter='')
-        if not file_name or file_name[0]=='':
-            return
-        
-        self.load_config_from_file(file_name[0])
-
-    def open_enemy_config(self):
-        file_name = QFileDialog.getOpenFileName(self, 'Open enemy configuration', f'./configs/enemy', "JSON (*.json)", selectedFilter='')
-        if not file_name or file_name[0]=='':
-            return
-        
-        self.load_config_from_file(file_name[0])
-
     def setup_signals(self):
         self.ui.load_mods_button.clicked.connect(self.button_pressed)
         self.ui.sim_weapon_combo.activated.connect(self.swap_selected_weapon)
@@ -251,6 +297,295 @@ class MainWindow(QMainWindow):
 
         self.ui.clear_enemy_scaling_button.clicked.connect(self.reset_enemy_scaling_settings)
         self.ui.primer_clear_settings_button.clicked.connect(self.reset_primer_settings)
+
+        self.enemy_ui.edit_enemy_create_new_checkbox.stateChanged.connect(self.enemy_edit_mode)
+        self.enemy_ui.edit_enemy_save_button.clicked.connect(self.save_enemy_editor)
+        self.enemy_ui.edit_enemy_cancel_button.clicked.connect(self.close_enemy_editor)
+
+        self.enemy_ui.add_bodypart_button.clicked.connect(self.add_enemy_bodypart)
+        self.enemy_ui.add_animation_button.clicked.connect(self.add_enemy_animation)
+        self.enemy_ui.delete_enemy_button.clicked.connect(self.delete_enemy)
+
+        self.weapon_ui.add_new_weapon_checkbox.stateChanged.connect(self.weapon_edit_mode)
+        self.weapon_ui.save_weapon_button.clicked.connect(self.save_weapon_editor)
+        self.weapon_ui.cancel_weapon_button.clicked.connect(self.close_weapon_editor)
+
+        self.weapon_ui.add_fire_mode_button.clicked.connect(self.add_fire_mode)
+        self.weapon_ui.add_fire_mode_effect_button.clicked.connect(self.add_fire_mode_effect)
+        self.weapon_ui.delete_weapon_button.clicked.connect(self.delete_weapon)
+    
+    def add_enemy_bodypart(self):
+        data = self.jmodel.serialize()
+        data["bodypart_multipliers"]['new_bodypart'] = {"multiplier": 1., "critical_damage_multiplier": 1.}
+        self.update_edit_enemy_jsonview(config=data)
+
+    def add_enemy_animation(self):
+        data = self.jmodel.serialize()
+        data["animation_multipliers"]['new_animation'] = {"multiplier": 1., "critical_damage_multiplier": 1.}
+        self.update_edit_enemy_jsonview(config=data)
+
+    def delete_enemy(self):
+        if self.enemy_ui.edit_enemy_create_new_checkbox.isChecked():
+            return
+        
+        enemy_name = self.enemy_ui.edit_enemy_enemyname_lineedit.text()
+        self.enemy_data.pop(enemy_name, None)
+        self.save_enemy_data()
+        # refresh combos
+        self.enemy_ui.close()
+        self.refresh_sim_enemy_combo()
+        self.enemy_config_changed()
+
+    def save_enemy_data(self):
+        with open("./warframe_simulacrum/data/unit_data.json", 'w') as f:
+            json.dump(self.enemy_data, f, indent=4)
+
+    def add_fire_mode(self):
+        data = self.jmodel.serialize()
+        converted = self.convert_weapon_json_jsonview(copy.deepcopy(sim_cst.DEFAULT_WEAPON_CONFIG))
+        data["fireModes"]['new_fire_mode'] = converted['fireModes']['default']
+        self.update_edit_weapon_jsonview(config=data)
+
+    def add_fire_mode_effect(self): #TODO open dialog to select which fire mode to add the fire mode effect
+        data = self.jmodel.serialize()
+        if len(data["fireModes"]) ==0:
+            return
+        self.select_fire_mode_dialog.comboBox.clear()
+        self.select_fire_mode_dialog.comboBox.addItems(list(data["fireModes"]))
+        self.select_fire_mode_dialog.exec()
+        fire_mode_name = self.select_fire_mode_dialog.comboBox.currentText()
+        fire_mode_effect = data["fireModes"][fire_mode_name]['secondaryEffects']
+
+        dfm = copy.deepcopy(sim_cst.DEFAULT_WEAPON_CONFIG)
+        deff = copy.deepcopy(sim_cst.DEFAULT_FIRE_MODE_EFFECT)
+        dfm["fireModes"]["default"]['secondaryEffects']['new_fire_mode_effect'] = deff
+        cvrt = self.convert_weapon_json_jsonview(dfm)
+
+        fire_mode_effect['new_fire_mode_effect'] = cvrt["fireModes"]["default"]['secondaryEffects']['new_fire_mode_effect']
+        self.update_edit_weapon_jsonview(config=data)
+
+    def delete_weapon(self):
+        if self.weapon_ui.add_new_weapon_checkbox.isChecked():
+            return
+        
+        weapon_name = self.weapon_ui.weapon_lineedit.text()
+        self.weapon_data.pop(weapon_name, None)
+        self.save_weapon_data()
+        # refresh combos
+        self.weapon_ui.close()
+        self.refresh_sim_weapon_combo()
+        self.swap_selected_weapon()
+    
+    def save_weapon_data(self):
+        with open("./warframe_simulacrum/data/ExportWeapons.json", 'w') as f:
+            json.dump(self.weapon_data, f, indent=4)
+
+    def _create_menu_bar(self):
+        menuBar = self.menuBar()
+        # file menu
+        file_menu = menuBar.addMenu("&File")
+        # save menu
+        save_menu = file_menu.addMenu("&Save")
+        save_menu.addAction(self.save_weapon_config_action)
+        save_menu.addAction(self.save_enemy_config_action)
+        # open menu
+        open_menu = file_menu.addMenu("&Open")
+        open_menu.addAction(self.open_enemy_config_action)
+        open_menu.addAction(self.open_weapon_config_action)
+
+        edit_menu = menuBar.addMenu("&Edit")
+        edit_menu.addAction(self.edit_enemy_config_action)
+        edit_menu.addAction(self.edit_weapon_config_action)
+
+
+    def _create_toolbar(self):
+        file_toolbar = QToolBar("File")
+        file_toolbar.setIconSize(QSize(16, 16))
+        self.addToolBar(file_toolbar)
+        file_toolbar.addAction(self.save_weapon_config_action)
+        file_toolbar.addAction(self.save_enemy_config_action)
+        file_toolbar.addAction(self.open_weapon_config_action)
+        file_toolbar.addAction(self.open_enemy_config_action)
+
+        edit_toolbar = QToolBar("Edit")
+        edit_toolbar.setIconSize(QSize(16, 16))
+        self.addToolBar(edit_toolbar)
+        edit_toolbar.addAction(self.edit_enemy_config_action)
+        edit_toolbar.addAction(self.edit_weapon_config_action)
+
+    
+    def _create_actions(self):
+        self.save_weapon_config_action = QAction(QIcon(":save_weapon.png"), "Save &Build", self)
+        self.save_enemy_config_action= QAction(QIcon(":save_enemy.png"),"Save E&nemy Config", self)
+        self.open_enemy_config_action= QAction(QIcon(":load_enemy.png"),"Open E&nemy Config", self)
+        self.open_weapon_config_action= QAction(QIcon(":load_weapon.png"),"Open &Build", self)
+
+        self.edit_enemy_config_action= QAction(QIcon(":edit_enemy.png"),"Edit &Enemy", self)
+        self.edit_weapon_config_action= QAction(QIcon(":edit_weapon.png"),"Edit &Enemy", self)
+
+
+    def _connect_actions(self):
+        self.save_weapon_config_action.triggered.connect(self.save_weapon_config)
+        self.save_enemy_config_action.triggered.connect(self.save_enemy_config)
+        self.open_weapon_config_action.triggered.connect(self.open_weapon_config)
+        self.open_enemy_config_action.triggered.connect(self.open_enemy_config)
+
+        self.edit_enemy_config_action.triggered.connect(self.edit_enemy_config)
+        self.edit_weapon_config_action.triggered.connect(self.edit_weapon_config)
+
+    def edit_weapon_config(self):
+        weapon_name = self.ui.sim_weapon_combo.currentText()
+        if weapon_name not in self.weapon_data:
+            return
+        if not self.weapon_ui.add_new_weapon_checkbox.isChecked():
+            self.weapon_ui.weapon_lineedit.setText(weapon_name)
+        else:
+            self.weapon_ui.weapon_lineedit.setText('')
+        default = copy.deepcopy(sim_cst.DEFAULT_WEAPON_CONFIG)
+        weapon_data = update(default, self.weapon_data.get(weapon_name, default))
+
+        weapon_jsonview_data = self.convert_weapon_json_jsonview(weapon_data)
+        self.update_edit_weapon_jsonview(config=weapon_jsonview_data)
+
+        self.edit_weapon_view.header().resizeSection(0, 200)
+        self.weapon_ui.show()
+
+    def convert_weapon_json_jsonview(self, data):
+        damage_types = [f.capitalize() for f in list(sim_cst.EXPORT_DAMAGE_TYPES)]
+
+        new_data = copy.deepcopy(data)
+        new_data['productCategory'] = {"value": new_data.get('productCategory', "Pistols"), "choices": sim_cst.productCategory_types}
+        new_data['rivenType'] = {"value": new_data.get('rivenType', "Pistol Riven Mod"), "choices": sim_cst.rivenType_types}
+
+        for fm in new_data['fireModes'].values():
+            fm["noise"] = {"value": new_data.get('noise', "ALARMING"), "choices": sim_cst.noise_types}
+            fm["trigger"] = {"value": new_data.get('trigger', "SEMI"), "choices": sim_cst.trigger_types}
+            # replace damage list with dict
+            vals = [float(f) for f in fm.get('damagePerShot',[0]*20)]
+            fm['damagePerShot'] = dict(zip(damage_types, vals))
+            # replace force proc list with dict
+
+            count_list = [fm.get('forcedProc',[]).count(i) for i in range(20)]
+            fm['forcedProc'] = dict(zip(damage_types, count_list))
+
+            for se in fm.get("secondaryEffects", {}).values():
+                vals = [float(f) for f in se.get('damagePerShot',[0]*20)]
+                se["damagePerShot"] = dict(zip(damage_types, vals))
+
+                count_list = [se.get('forcedProc',[]).count(i) for i in range(20)]
+                se['forcedProc'] = dict(zip(damage_types, count_list))
+
+        return new_data
+    
+    def convert_se_json_jsonview(self, data):
+        damage_types = [f.capitalize() for f in list(sim_cst.EXPORT_DAMAGE_TYPES)]
+
+        new_data = copy.deepcopy(data)
+
+        vals = [float(f) for f in new_data.get('damagePerShot',[0]*20)]
+        new_data["damagePerShot"] = dict(zip(damage_types, vals))
+
+        count_list = [new_data.get('forcedProc',[]).count(i) for i in range(20)]
+        new_data['forcedProc'] = dict(zip(damage_types, count_list))
+
+        return new_data
+    
+    def convert_weapon_jsonview_json(self, data):
+        new_data = copy.deepcopy(data)
+
+        new_data['productCategory'] = new_data.get('productCategory',{}).get("value", "Pistols")
+        new_data['rivenType'] = new_data.get('rivenType',{}).get("value", "Pistol Riven Mod")
+
+        if 'fireModes' not in new_data:
+            new_data['fireModes'] = self.convert_weapon_json_jsonview(copy.deepcopy(sim_cst.DEFAULT_WEAPON_CONFIG))['fireModes']
+        
+        if len(new_data['fireModes']) == 0:
+            fm_def = self.convert_weapon_json_jsonview(copy.deepcopy(sim_cst.DEFAULT_WEAPON_CONFIG))['fireModes']
+            new_data['fireModes'][next(iter(fm_def))] = next(iter(fm_def.values()))
+        
+        for fm in new_data['fireModes'].values():
+
+            fm["noise"] = new_data.get('noise',{}).get("value", "ALARMING")
+            fm["trigger"] = new_data.get('trigger',{}).get("value", "SEMI")
+            
+            fm["damagePerShot"] = list(fm.get('damagePerShot', dict(zip(list(sim_cst.EXPORT_DAMAGE_TYPES), [0]*20))).values())
+            fm['totalDamage'] = sum(fm.get('damagePerShot',[0]*20))
+
+            original_indices = []
+            count_list = fm.get('forcedProc', dict(zip(list(sim_cst.EXPORT_DAMAGE_TYPES), [0]*20)) ).values()
+            for index, count in enumerate(count_list):
+                original_indices.extend([index] * count)
+            fm['forcedProc'] = original_indices
+
+            if 'secondaryEffects' not in fm:
+                new_data['secondaryEffects'] = {'default':self.convert_se_json_jsonview(copy.deepcopy(sim_cst.DEFAULT_FIRE_MODE_EFFECT))}
+
+            for se in fm["secondaryEffects"].values():
+                se["damagePerShot"] = list(se.get('damagePerShot', dict(zip(list(sim_cst.EXPORT_DAMAGE_TYPES), [0]*20))).values())
+                se['totalDamage'] = sum(se.get('damagePerShot',[0]*20))
+
+                original_indices = []
+                count_list = se.get('forcedProc', dict(zip(list(sim_cst.EXPORT_DAMAGE_TYPES), [0]*20)) ).values()
+                for index, count in enumerate(count_list):
+                    original_indices.extend([index] * count)
+                se['forcedProc'] = original_indices
+
+        return new_data
+
+    def edit_enemy_config(self):
+        enemy_name = self.ui.sim_enemy_combo.currentText()
+        if enemy_name not in self.enemy_data:
+            return
+        if not self.enemy_ui.edit_enemy_create_new_checkbox.isChecked():
+            self.enemy_ui.edit_enemy_enemyname_lineedit.setText(self.ui.sim_enemy_combo.currentText())
+        else:
+            self.enemy_ui.edit_enemy_enemyname_lineedit.setText('')
+        default = copy.deepcopy(sim_cst.DEFAULT_ENEMY_CONFIG)
+        enemy_data = update(default, self.enemy_data.get(enemy_name, default))
+
+        enemy_jsonview_data = self.convert_enemy_json_jsonview(enemy_data)
+        self.update_edit_enemy_jsonview(config=enemy_jsonview_data)
+
+        # self.edit_enemy_view.resizeColumnToContents(0)
+        self.edit_enemy_view.header().resizeSection(0, 200)
+        self.enemy_ui.show()
+    
+    def convert_enemy_json_jsonview(self, data):
+        new_data = copy.deepcopy(data)
+        new_data['shield_type'] = {"value": new_data.get('shield_type', "None"), "choices": sim_cst.shield_types}
+        new_data['health_type'] = {"value": new_data.get('health_type', "Flesh"), "choices": sim_cst.health_types}
+        new_data['armor_type'] = {"value": new_data.get('armor_type', "None"), "choices": sim_cst.armor_types}
+        
+        new_data['damage_controller_type'] = {"value": new_data.get('damage_controller_type', "DC_NORMAL"), "choices": sim_cst.damage_controller_types}
+        new_data['critical_controller_type'] = {"value": new_data.get('critical_controller_type', "CC_NORMAL"), "choices": sim_cst.critical_controller_types}
+
+        return new_data
+    
+    def convert_enemy_jsonview_json(self, data):
+        new_data = copy.deepcopy(data)
+        new_data['shield_type'] = new_data.get('shield_type',{}).get("value", "None")
+        new_data['health_type'] = new_data.get('health_type',{}).get("value", "Flesh")
+        new_data['armor_type'] = new_data.get('armor_type',{}).get("value", "None")
+        
+        new_data['damage_controller_type'] = new_data.get('damage_controller_type',{}).get("value", "DC_NORMAL")
+        new_data['critical_controller_type'] = new_data.get('critical_controller_type',{}).get("value", "CC_NORMAL")
+
+        return new_data
+
+    def open_weapon_config(self):
+        file_name = QFileDialog.getOpenFileName(self, 'Open weapon configuration', f'./configs/weapon', "JSON (*.json)", selectedFilter='')
+        if not file_name or file_name[0]=='':
+            return
+        
+        self.load_config_from_file(file_name[0])
+
+    def open_enemy_config(self):
+        file_name = QFileDialog.getOpenFileName(self, 'Open enemy configuration', f'./configs/enemy', "JSON (*.json)", selectedFilter='')
+        if not file_name or file_name[0]=='':
+            return
+        
+        self.load_config_from_file(file_name[0])
+
 
     def reset_primer_settings(self):
         self.ui.primer_status_duration_spinner.setValue(0)
@@ -631,6 +966,28 @@ class MainWindow(QMainWindow):
     def init_sim_enemy_combo(self):
         self.ui.sim_enemy_combo.clear()
         self.ui.sim_enemy_combo.addItems(sorted(self.enemy_data.keys()))
+    
+    def refresh_sim_enemy_combo(self):
+        enemy_name = self.ui.sim_enemy_combo.currentText()
+        name1 = self.ui.sim_bodypart_combo.currentText()
+        name2 = self.ui.sim_animation_combo.currentText()
+
+        self.init_sim_enemy_combo()
+
+        self.ui.sim_enemy_combo.setCurrentIndex(max(0,self.ui.sim_enemy_combo.findText(enemy_name)))
+        self.swap_selected_enemy()
+
+        self.ui.sim_bodypart_combo.setCurrentIndex(max(0,self.ui.sim_bodypart_combo.findText(name1)))
+        self.ui.sim_animation_combo.setCurrentIndex(max(0, self.ui.sim_animation_combo.findText(name2)))
+
+    def refresh_sim_weapon_combo(self):
+        name = self.ui.sim_weapon_combo.currentText()
+        name1 = self.ui.sim_firemode_combo.currentText()
+        
+        self.init_sim_weapon_combo()
+
+        self.ui.sim_weapon_combo.setCurrentIndex(max(0,self.ui.sim_weapon_combo.findText(name)))
+        self.ui.sim_firemode_combo.setCurrentIndex(max(0,self.ui.sim_firemode_combo.findText(name1)))
     
     def init_preview_weapon_effect_combo(self):
         fire_mode_name = self.ui.sim_firemode_combo.currentText()
