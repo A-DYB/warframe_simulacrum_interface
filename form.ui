@@ -744,27 +744,27 @@
   <customwidget>
    <class>ModTableView</class>
    <extends>QTableView</extends>
-   <header>custom_widgets.py</header>
+   <header>custom_widgets</header>
   </customwidget>
   <customwidget>
    <class>SearchableComboBox</class>
    <extends>QComboBox</extends>
-   <header>custom_widgets.py</header>
+   <header>custom_widgets</header>
   </customwidget>
   <customwidget>
    <class>DragDropTableWidget</class>
    <extends>QTableView</extends>
-   <header>custom_widgets.py</header>
+   <header>custom_widgets</header>
   </customwidget>
   <customwidget>
    <class>ClipSpinBox</class>
    <extends>QSpinBox</extends>
-   <header>custom_widgets.py</header>
+   <header>custom_widgets</header>
   </customwidget>
   <customwidget>
    <class>PrimerTableWidget</class>
    <extends>QTableWidget</extends>
-   <header>custom_widgets.py.h</header>
+   <header>custom_widgets</header>
   </customwidget>
  </customwidgets>
  <resources/>

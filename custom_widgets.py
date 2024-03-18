@@ -339,6 +339,15 @@ class DragDropTableWidget(QTableView):
         self.setModel(table_model)
         self.blockSignals(False)
 
+    def update_items(self, string_list):
+        if len(string_list) != self.model().rowCount():
+            raise Exception('String list given to DragDropTableWidget not of correct length!')
+        
+        self.blockSignals(True)
+        for row in range(self.model().rowCount()):
+            self.model().item(row, 0).setText(string_list[row])
+        self.blockSignals(False)
+
 class TableItemDescriptor(QWidget):
     def __init__(self, descriptor:str, value:str):
         super().__init__()

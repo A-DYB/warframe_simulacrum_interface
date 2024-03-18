@@ -7,21 +7,22 @@ import json
 import unicodedata
 import numpy as np
 
-from PySide6 import QtWidgets, QtGui, QtCore
-from PySide6.QtGui import QMouseEvent, QKeySequence, QShortcut, QAction, QIcon
-from PySide6.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QFileDialog, QToolBar, QStyle, QDoubleSpinBox, QListWidgetItem, QHeaderView
-from PySide6.QtCore import QFile, QSize, Qt
-from PySide6.QtUiTools import QUiLoader
+from PySide6.QtGui import QKeySequence, QShortcut, QAction, QIcon, QStandardItemModel
+from PySide6.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QFileDialog, QToolBar, QHeaderView, QDialog, QWidget, QAbstractItemView
+from PySide6.QtCore import QCoreApplication, QSize, Qt
 
-from custom_widgets import ComboBoxDialog, PrimerTableWidget, PositionCursorSelectDelegate, SaveDialog, ModTableView, ModTableItem, CustomFilterProxyModel, SearchableComboBox, PlotWindow, DragDropTableWidget, TableItemDescriptor, TableItemCategoryLabel, ClipSpinBox
+from custom_widgets import ComboBoxDialog, PositionCursorSelectDelegate, SaveDialog, ModTableItem, CustomFilterProxyModel, PlotWindow, TableItemDescriptor, TableItemCategoryLabel
 from warframe_simulacrum.weapon import Weapon, FireMode, EventTrigger, DamageParameter, Parameter
 from warframe_simulacrum.unit import Unit, update
 import warframe_simulacrum.constants as sim_cst
 from warframe_simulacrum.simulation import Simulacrum, get_first_damage, get_first_status_damage
 from string_calc import Calc
 import interface_constants as cst
-import qrc_resources
 import copy
+from ui_enemy import Ui_Dialog as Enemy_Ui
+from ui_weapon import Ui_Dialog as Weapon_Ui
+from ui_mainwindow import Ui_MainWindow
+import qrc_resources
 
 from qt_json_view import model as view_model
 from qt_json_view.model import JsonModel
@@ -43,7 +44,6 @@ class MainWindow(QMainWindow):
         self.adjust_layout()
         self.adjust_style()
         self.adjust_startup_settings()
-        # self.setup_signals()
         self.plot_window = PlotWindow()
 
         self.sim = Simulacrum(self.plot_window.canvas.figure, self.plot_window.ax)
@@ -94,6 +94,7 @@ class MainWindow(QMainWindow):
         self.update_edit_enemy_jsonview(config)
         # self.enemy_ui.layout().addWidget(self.edit_enemy_view)
         self.enemy_ui.layout().insertWidget(2, self.edit_enemy_view)
+        # self.enemy_ui.verticalLayout.insertWidget(2, self.edit_enemy_view)
     
     def update_edit_enemy_jsonview(self, config=sim_cst.DEFAULT_ENEMY_CONFIG):
         proxy = view_model.JsonSortFilterProxyModel()
@@ -124,8 +125,8 @@ class MainWindow(QMainWindow):
         json_data = self.convert_enemy_jsonview_json(data)
         self.enemy_data[enemy_name] = json_data
 
-        with open("./warframe_simulacrum/data/unit_data.json", 'w') as f:
-            json.dump(self.enemy_data, f, indent=4)
+        self.save_enemy_data()
+        self.display_enemy.update_data()
         
         self.enemy_ui.edit_enemy_create_new_checkbox.setChecked(False)
         self.enemy_ui.close()
@@ -171,8 +172,8 @@ class MainWindow(QMainWindow):
         json_data = self.convert_weapon_jsonview_json(data)
         self.weapon_data[weapon_name] = json_data
 
-        with open("./warframe_simulacrum/data/ExportWeapons.json", 'w') as f:
-            json.dump(self.weapon_data, f, indent=4)
+        self.save_weapon_data()
+        self.display_weapon.update_data()
             
         self.weapon_ui.add_new_weapon_checkbox.setChecked(False)
         self.weapon_ui.close()
@@ -211,31 +212,44 @@ class MainWindow(QMainWindow):
         self.swap_primer_config()
 
     def load_ui(self):
-        loader = QUiLoader()
-        loader.registerCustomWidget(ModTableView)
-        loader.registerCustomWidget(SearchableComboBox)
-        loader.registerCustomWidget(DragDropTableWidget)
-        loader.registerCustomWidget(ClipSpinBox)
-        loader.registerCustomWidget(PrimerTableWidget)
+        # loader = QUiLoader()
+        # loader.registerCustomWidget(ModTableView)
+        # loader.registerCustomWidget(SearchableComboBox)
+        # loader.registerCustomWidget(DragDropTableWidget)
+        # loader.registerCustomWidget(ClipSpinBox)
+        # loader.registerCustomWidget(PrimerTableWidget)
 
-        path = os.fspath(Path(__file__).resolve().parent / "form.ui")
-        ui_file = QFile(path)
-        ui_file.open(QFile.ReadOnly)
-        self.ui = loader.load(ui_file, self)
-        ui_file.close()
+        # path = os.fspath(Path(__file__).resolve().parent / "form.ui")
+        # ui_file = QFile(path)
+        # ui_file.open(QFile.ReadOnly)
+        # self.ui = loader.load(ui_file, self)
+        # ui_file.close()
+        # self.resize(QSize(1000, 800)) # set window to a default size
+
+        # path = os.fspath(Path(__file__).resolve().parent / "enemy_edit_dialog.ui")
+        # ui_file = QFile(path)
+        # ui_file.open(QFile.ReadOnly)
+        # self.enemy_ui = loader.load(ui_file, self)
+        # ui_file.close()
+
+        # path = os.fspath(Path(__file__).resolve().parent / "weapon.ui")
+        # ui_file = QFile(path)
+        # ui_file.open(QFile.ReadOnly)
+        # self.weapon_ui = loader.load(ui_file, self)
+        # ui_file.close()
+        widget = QWidget(self)
+        self.setCentralWidget(widget)
+
+
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(widget)
+
+        self.weapon_ui = WeaponDialog(self)
+        self.enemy_ui = EnemyDialog(self)
+
         self.resize(QSize(1000, 800)) # set window to a default size
 
-        path = os.fspath(Path(__file__).resolve().parent / "enemy_edit_dialog.ui")
-        ui_file = QFile(path)
-        ui_file.open(QFile.ReadOnly)
-        self.enemy_ui = loader.load(ui_file, self)
-        ui_file.close()
-
-        path = os.fspath(Path(__file__).resolve().parent / "weapon.ui")
-        ui_file = QFile(path)
-        ui_file.open(QFile.ReadOnly)
-        self.weapon_ui = loader.load(ui_file, self)
-        ui_file.close()
+        
     
     def closeEvent(self, event):
         if self.plot_window:
@@ -268,6 +282,7 @@ class MainWindow(QMainWindow):
     def setup_signals(self):
         self.ui.load_mods_button.clicked.connect(self.button_pressed)
         self.ui.sim_weapon_combo.activated.connect(self.swap_selected_weapon)
+        self.ui.sim_firemode_combo.activated.connect(self.swap_selected_fire_mode)
         self.ui.preview_effect_select_combo.activated.connect(self.setup_weapon_preview_list)
 
         self.ui.sim_enemy_combo.activated.connect(self.swap_selected_enemy)
@@ -337,13 +352,13 @@ class MainWindow(QMainWindow):
         self.enemy_config_changed()
 
     def save_enemy_data(self):
-        with open("./warframe_simulacrum/data/unit_data.json", 'w') as f:
+        with open(os.path.join(os.path.dirname(__file__), 'warframe_simulacrum/data/unit_data.json'), 'w') as f:
             json.dump(self.enemy_data, f, indent=4)
 
     def add_fire_mode(self):
         data = self.jmodel.serialize()
-        converted = self.convert_weapon_json_jsonview(copy.deepcopy(sim_cst.DEFAULT_WEAPON_CONFIG))
-        data["fireModes"]['new_fire_mode'] = converted['fireModes']['default']
+        converted = self.convert_fm_json_jsonview(copy.deepcopy(sim_cst.DEFAULT_FIRE_MODE))
+        data["fireModes"]['new_fire_mode'] = converted
         self.update_edit_weapon_jsonview(config=data)
 
     def add_fire_mode_effect(self): #TODO open dialog to select which fire mode to add the fire mode effect
@@ -356,12 +371,12 @@ class MainWindow(QMainWindow):
         fire_mode_name = self.select_fire_mode_dialog.comboBox.currentText()
         fire_mode_effect = data["fireModes"][fire_mode_name]['secondaryEffects']
 
-        dfm = copy.deepcopy(sim_cst.DEFAULT_WEAPON_CONFIG)
+        dfm = copy.deepcopy(sim_cst.DEFAULT_FIRE_MODE)
         deff = copy.deepcopy(sim_cst.DEFAULT_FIRE_MODE_EFFECT)
-        dfm["fireModes"]["default"]['secondaryEffects']['new_fire_mode_effect'] = deff
-        cvrt = self.convert_weapon_json_jsonview(dfm)
+        dfm['secondaryEffects']['new_fire_mode_effect'] = deff
+        cvrt = self.convert_fm_json_jsonview(dfm)
 
-        fire_mode_effect['new_fire_mode_effect'] = cvrt["fireModes"]["default"]['secondaryEffects']['new_fire_mode_effect']
+        fire_mode_effect['new_fire_mode_effect'] = cvrt['secondaryEffects']['new_fire_mode_effect']
         self.update_edit_weapon_jsonview(config=data)
 
     def delete_weapon(self):
@@ -377,7 +392,7 @@ class MainWindow(QMainWindow):
         self.swap_selected_weapon()
     
     def save_weapon_data(self):
-        with open("./warframe_simulacrum/data/ExportWeapons.json", 'w') as f:
+        with open(os.path.join(os.path.dirname(__file__), "warframe_simulacrum/data/ExportWeapons.json"), 'w') as f:
             json.dump(self.weapon_data, f, indent=4)
 
     def _create_menu_bar(self):
@@ -394,9 +409,8 @@ class MainWindow(QMainWindow):
         open_menu.addAction(self.open_weapon_config_action)
 
         edit_menu = menuBar.addMenu("&Edit")
-        edit_menu.addAction(self.edit_enemy_config_action)
         edit_menu.addAction(self.edit_weapon_config_action)
-
+        edit_menu.addAction(self.edit_enemy_config_action)
 
     def _create_toolbar(self):
         file_toolbar = QToolBar("File")
@@ -410,9 +424,8 @@ class MainWindow(QMainWindow):
         edit_toolbar = QToolBar("Edit")
         edit_toolbar.setIconSize(QSize(16, 16))
         self.addToolBar(edit_toolbar)
-        edit_toolbar.addAction(self.edit_enemy_config_action)
         edit_toolbar.addAction(self.edit_weapon_config_action)
-
+        edit_toolbar.addAction(self.edit_enemy_config_action)
     
     def _create_actions(self):
         self.save_weapon_config_action = QAction(QIcon(":save_weapon.png"), "Save &Build", self)
@@ -421,8 +434,7 @@ class MainWindow(QMainWindow):
         self.open_weapon_config_action= QAction(QIcon(":load_weapon.png"),"Open &Build", self)
 
         self.edit_enemy_config_action= QAction(QIcon(":edit_enemy.png"),"Edit &Enemy", self)
-        self.edit_weapon_config_action= QAction(QIcon(":edit_weapon.png"),"Edit &Enemy", self)
-
+        self.edit_weapon_config_action= QAction(QIcon(":edit_weapon.png"),"Edit &Weapon", self)
 
     def _connect_actions(self):
         self.save_weapon_config_action.triggered.connect(self.save_weapon_config)
@@ -443,6 +455,16 @@ class MainWindow(QMainWindow):
             self.weapon_ui.weapon_lineedit.setText('')
         default = copy.deepcopy(sim_cst.DEFAULT_WEAPON_CONFIG)
         weapon_data = update(default, self.weapon_data.get(weapon_name, default))
+
+        if len(weapon_data.get('fireModes', {})) == 0:
+            weapon_data['fireModes'] = {'default':copy.deepcopy(sim_cst.DEFAULT_FIRE_MODE)}
+        for fm in weapon_data.get('fireModes', {}).values():
+            fm1 = update(copy.deepcopy(sim_cst.DEFAULT_FIRE_MODE), fm)
+            update(fm, fm1)
+
+            for se in fm.get("secondaryEffects", {}).values():
+                se1 = update(copy.deepcopy(sim_cst.DEFAULT_FIRE_MODE_EFFECT), se)
+                update(se, se1)
 
         weapon_jsonview_data = self.convert_weapon_json_jsonview(weapon_data)
         self.update_edit_weapon_jsonview(config=weapon_jsonview_data)
@@ -477,6 +499,29 @@ class MainWindow(QMainWindow):
 
         return new_data
     
+    def convert_fm_json_jsonview(self,data):
+        damage_types = [f.capitalize() for f in list(sim_cst.EXPORT_DAMAGE_TYPES)]
+        fm = copy.deepcopy(data)
+
+        fm["noise"] = {"value": fm.get('noise', "ALARMING"), "choices": sim_cst.noise_types}
+        fm["trigger"] = {"value": fm.get('trigger', "SEMI"), "choices": sim_cst.trigger_types}
+        # replace damage list with dict
+        vals = [float(f) for f in fm.get('damagePerShot',[0]*20)]
+        fm['damagePerShot'] = dict(zip(damage_types, vals))
+        # replace force proc list with dict
+
+        count_list = [fm.get('forcedProc',[]).count(i) for i in range(20)]
+        fm['forcedProc'] = dict(zip(damage_types, count_list))
+
+        for se in fm.get("secondaryEffects", {}).values():
+            vals = [float(f) for f in se.get('damagePerShot',[0]*20)]
+            se["damagePerShot"] = dict(zip(damage_types, vals))
+
+            count_list = [se.get('forcedProc',[]).count(i) for i in range(20)]
+            se['forcedProc'] = dict(zip(damage_types, count_list))
+
+        return fm
+    
     def convert_se_json_jsonview(self, data):
         damage_types = [f.capitalize() for f in list(sim_cst.EXPORT_DAMAGE_TYPES)]
 
@@ -497,11 +542,7 @@ class MainWindow(QMainWindow):
         new_data['rivenType'] = new_data.get('rivenType',{}).get("value", "Pistol Riven Mod")
 
         if 'fireModes' not in new_data:
-            new_data['fireModes'] = self.convert_weapon_json_jsonview(copy.deepcopy(sim_cst.DEFAULT_WEAPON_CONFIG))['fireModes']
-        
-        if len(new_data['fireModes']) == 0:
-            fm_def = self.convert_weapon_json_jsonview(copy.deepcopy(sim_cst.DEFAULT_WEAPON_CONFIG))['fireModes']
-            new_data['fireModes'][next(iter(fm_def))] = next(iter(fm_def.values()))
+            new_data['fireModes'] = {'default': self.convert_fm_json_jsonview(copy.deepcopy(sim_cst.DEFAULT_FIRE_MODE)) }
         
         for fm in new_data['fireModes'].values():
 
@@ -615,10 +656,21 @@ class MainWindow(QMainWindow):
         
         self.load_mod_table_into_weapon(self.display_weapon)
         self.setup_primer_weapon()
+
         self.plot_window.ax.cla()
         fire_mode = self.display_weapon.fire_modes[fire_mode_name]
         fire_mode.target_bodypart = self.ui.sim_bodypart_combo.currentText()
-        self.sim.run_simulation([self.display_enemy], fire_mode, next(iter(self.primer_weapon.fire_modes.values())))
+
+        enemy_name = self.ui.sim_enemy_combo.currentText()
+        enemy_level = self.ui.sim_level_spinner.value()
+        scaling = sim_cst.OLD_PROTECTION_SCALING if self.ui.old_level_scale_checkbox.isChecked() else sim_cst.NEW_PROTECTION_SCALING
+        self.display_enemy = Unit(enemy_name, enemy_level, self.sim, scaling)
+        self.display_enemy.health.set_mission_multiplier('mission_bonus', self.ui.health_multiplier_spinner.value())
+        self.display_enemy.shield.set_mission_multiplier('mission_bonus', self.ui.shield_multiplier_spinner.value())
+        self.display_enemy.armor.set_mission_multiplier('mission_bonus', self.ui.armor_multiplier_spinner.value())
+
+        # self.sim.run_single_simulation([self.display_enemy], fire_mode, next(iter(self.primer_weapon.fire_modes.values())))
+        self.sim.run_multi_simulation(self.plot_window, [self.display_enemy], fire_mode, next(iter(self.primer_weapon.fire_modes.values())))
         self.plot_window.canvas.draw()
 
         self.plot_window.show()
@@ -632,6 +684,9 @@ class MainWindow(QMainWindow):
             return
         scaling = sim_cst.OLD_PROTECTION_SCALING if self.ui.old_level_scale_checkbox.isChecked() else sim_cst.NEW_PROTECTION_SCALING
         self.display_enemy = Unit(enemy_name, enemy_level, self.sim, scaling)
+        self.display_enemy.health.set_mission_multiplier('mission_bonus', self.ui.health_multiplier_spinner.value())
+        self.display_enemy.shield.set_mission_multiplier('mission_bonus', self.ui.shield_multiplier_spinner.value())
+        self.display_enemy.armor.set_mission_multiplier('mission_bonus', self.ui.armor_multiplier_spinner.value())
 
         self.setup_enemy_preview_list()
         self.setup_damage_preview_table()
@@ -711,21 +766,29 @@ class MainWindow(QMainWindow):
 
         selected_items = [cst.INDEX_COMBINABLEDAMAGE[i] for i in config.get("combineElemental_m", {}).get("indices", [])]
         unselected_items = [key for key in cst.COMBINABLEDAMAGE_INDEX if key not in selected_items]
-        self.ui.elemental_mod_order_table.set_items(selected_items+unselected_items)
+        self.ui.elemental_mod_order_table.update_items(selected_items+unselected_items)
         model = self.ui.elemental_mod_order_table.model()
+        # print()
+        # print(selected_items, unselected_items)
         for row in range(len(selected_items)):
             model.item(row, 0).setCheckState(Qt.Checked)
+        for row in range(len(selected_items), len(selected_items)+len(unselected_items)):
+            # print(row)
+            model.item(row, 0).setCheckState(Qt.Unchecked)
 
         # setup weapon combo
         weapon_name = config.get("weapon_name", "")
         index = self.ui.sim_weapon_combo.findText(weapon_name)
         if index != -1:
             self.ui.sim_weapon_combo.setCurrentIndex(index)
+            self.ui.sim_weapon_combo.activated.emit(index)
 
         fire_mode_name = config.get("fire_mode_name", "")
         index = self.ui.sim_firemode_combo.findText(fire_mode_name)
         if index != -1:
             self.ui.sim_firemode_combo.setCurrentIndex(index)
+            self.ui.sim_firemode_combo.activated.emit(index)
+
 
         self.ui.mod_table_view.edit_mode=False
         self.new_mod_table_config()
@@ -770,7 +833,9 @@ class MainWindow(QMainWindow):
         weapon_name = self.ui.sim_weapon_combo.currentText()
         fire_mode_name = self.ui.sim_firemode_combo.currentText()
         def_filename = slugify(f'{weapon_name}_{fire_mode_name}')
-        file_name = QFileDialog.getSaveFileName(self, 'Save configuration as', f'./configs/weapon/{def_filename}.json', "JSON (*.json)", selectedFilter='')
+        
+        
+        file_name = QFileDialog.getSaveFileName(self, 'Save configuration as', os.path.join(os.path.dirname(__file__), f'configs/weapon/{def_filename}.json'), "JSON (*.json)", selectedFilter='')
         if not file_name or file_name[0]=='':
             return
         mod_config["weapon_name"] = weapon_name
@@ -817,18 +882,12 @@ class MainWindow(QMainWindow):
                      'level':enemy_level, 'health_multiplier':health_multiplier, 'armor_multiplier':armor_multiplier, 'shield_multiplier':shield_multiplier})
         
         def_filename = slugify(f'{enemy_name}_level_{enemy_level}')
-        file_name = QFileDialog.getSaveFileName(self, 'Save configuration as', f'./configs/enemy/{def_filename}.json', "JSON (*.json)", selectedFilter='')
+        file_name = QFileDialog.getSaveFileName(self, 'Save configuration as', os.path.join(os.path.dirname(__file__), f'configs/enemy/{def_filename}.json'), "JSON (*.json)", selectedFilter='')
         if not file_name or file_name[0]=='':
             return
         
         with open(file_name[0], 'w') as f:
             json.dump(config, f, indent=4)
-    
-    def get_build_summary_string(self):
-        weapon_name = self.ui.sim_weapon_combo.currentText()
-        fire_mode_name = self.ui.sim_firemode_combo.currentText()
-
-
 
     def load_mod_table_into_weapon(self, weapon:Weapon):
         filter_proxy_model = self.ui.mod_table_view.model()
@@ -852,7 +911,6 @@ class MainWindow(QMainWindow):
                         # invalid entry, use the default mod value
                         val = max(0, cst.MOD_MIN_VALUE_MAP.get(main_type, {sub_type:0}).get(sub_type, 0)) 
                     
-                    # print(main_type,sub_type, val)
                     if main_type not in mod_config:
                         mod_config[main_type] = {}
                     mod_config[main_type][sub_type] = val
@@ -865,12 +923,12 @@ class MainWindow(QMainWindow):
         weapon.load_mod_config(mod_config)
 
     def get_weapon_data(self):
-        with open("./warframe_simulacrum/data/ExportWeapons.json", 'r') as f:
+        with open(os.path.join(os.path.dirname(__file__), "warframe_simulacrum/data/ExportWeapons.json"), 'r') as f:
             weapon_data = json.load(f)
         return weapon_data
 
     def get_enemy_data(self):
-        with open("./warframe_simulacrum/data/unit_data.json", 'r') as f:
+        with open(os.path.join(os.path.dirname(__file__), "warframe_simulacrum/data/unit_data.json"), 'r') as f:
             enemy_data = json.load(f)
         return enemy_data
     
@@ -902,6 +960,9 @@ class MainWindow(QMainWindow):
             return
         scaling = sim_cst.OLD_PROTECTION_SCALING if self.ui.old_level_scale_checkbox.isChecked() else sim_cst.NEW_PROTECTION_SCALING
         self.display_enemy = Unit(enemy_name, enemy_level, self.sim, scaling)
+        self.display_enemy.health.set_mission_multiplier('mission_bonus', self.ui.health_multiplier_spinner.value())
+        self.display_enemy.shield.set_mission_multiplier('mission_bonus', self.ui.shield_multiplier_spinner.value())
+        self.display_enemy.armor.set_mission_multiplier('mission_bonus', self.ui.armor_multiplier_spinner.value())
 
         # reset the damage preview table
         self.setup_damage_preview_table()
@@ -926,6 +987,14 @@ class MainWindow(QMainWindow):
         # reset the damage preview table
         self.setup_damage_preview_table()
 
+        # reset the weapon preview effect combo 
+        self.init_preview_weapon_effect_combo()
+        # reset the weapon preview list 
+        self.setup_weapon_preview_list()
+    
+    def swap_selected_fire_mode(self):
+        # reset the damage preview table
+        self.setup_damage_preview_table()
         # reset the weapon preview effect combo 
         self.init_preview_weapon_effect_combo()
         # reset the weapon preview list 
@@ -1087,8 +1156,8 @@ class MainWindow(QMainWindow):
                 self.ui.damage_preview_table.setItem(i, 2 + list_index, item)
 
         header = self.ui.damage_preview_table.horizontalHeader()
-        header.setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(QHeaderView.Stretch)
+        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.ui.damage_preview_table.verticalHeader().hide()
 
     def setup_mod_table(self):
@@ -1110,7 +1179,7 @@ class MainWindow(QMainWindow):
                 # mod_info[f'{mod_type_san} {sub_type_san}'] = {'mod_type_san':mod_type_san, 'sub_type_san':sub_type_san, 'main_type':mod_type, 'sub_type':sub_type}
                 mod_info.append((mod_type_san, sub_type_san, mod_type, sub_type))
 
-        model = QtGui.QStandardItemModel(len(mod_info), 3 )
+        model = QStandardItemModel(len(mod_info), 3 )
         model.setHorizontalHeaderLabels(['MOD TYPE', "MOD SUBTYPE", 'VALUE'])
         for row, (mod_type_san, sub_type_san, mod_type, sub_type) in enumerate(mod_info):
             item = ModTableItem(mod_type_san, mod_type, sub_type) 
@@ -1133,14 +1202,14 @@ class MainWindow(QMainWindow):
 
         self.ui.mod_table_view.setModel(filter_proxy_model)
         header = self.ui.mod_table_view.horizontalHeader()
-        header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
+        header.setSectionResizeMode(QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.Stretch)
 
         self.ui.mod_table_view.clicked.connect(self.ui.mod_table_view.cellClicked)
         self.ui.mod_table_view.setItemDelegate(PositionCursorSelectDelegate(self.ui.mod_table_view))
 
-        self.ui.mod_table_view.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
-        self.ui.mod_table_view.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.ui.mod_table_view.setSelectionMode(QAbstractItemView.NoSelection)
+        self.ui.mod_table_view.setFocusPolicy(Qt.NoFocus)
 
         self.ui.mod_table_view.updateSpans()
         self.ui.mod_table_view.verticalHeader().hide()
@@ -1197,8 +1266,19 @@ def slugify(value, allow_unicode=False):
     return re.sub(r"[-\s]+", "-", value).strip("-_")
 
 
+class EnemyDialog(QDialog, Enemy_Ui):  # Inherit from both QDialog and Enemy_Ui
+    def __init__(self, parent=None):
+        super(EnemyDialog, self).__init__(parent)
+        self.setupUi(self)  # Call setupUi directly without the 
+
+class WeaponDialog(QDialog, Weapon_Ui):
+    def __init__(self, parent=None):
+        super(WeaponDialog, self).__init__(parent)
+        self.setupUi(self)  # Call setupUi directly without the 
+
+
 if __name__ == "__main__":
-    QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
+    QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
     app = QApplication([])
     app.setStyle('Fusion')
     widget = MainWindow()
